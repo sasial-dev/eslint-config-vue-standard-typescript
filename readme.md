@@ -14,29 +14,16 @@ Here is an example, but use it only for reference,
 because your decisions regarding version ranges and range specifiers may vary.
 
 ```
-npm install --save-dev \
-  typescript@\* \
-  eslint@^8.0.1 \
-  eslint-plugin-promise@^6.0.0 \
-  eslint-plugin-import@^2.25.2 \
-  eslint-plugin-n@^15.0.0 \
-  @typescript-eslint/eslint-plugin@^5.0.0 \
-  eslint-config-standard-with-typescript@latest
+npm install --save-dev typescript@* eslint@^8.0.1 @sasial-dev/eslint-config-vue-standard-typescript@latest
 ```
 
-Yes, this is a large number of packages. This is due to [a known limitation in ESLint](https://github.com/eslint/eslint/issues/3458).
-
-This list of dependencies is:
-
-- TypeScript, which you may already have installed
-- [ESLint](https://github.com/eslint/eslint)
-- 3 Peer dependencies of [eslint-config-standard](https://github.com/standard/eslint-config-standard)
-- [@typescript-eslint/eslint-plugin](https://www.npmjs.com/package/@typescript-eslint/eslint-plugin); ESLint rules for TypeScript.
-- This package
+To remove the need for a large number of packages, yet allowing us to give you control, we use the rushstack [eslint-patch](https://www.npmjs.com/package/@rushstack/eslint-patch).
 
 Here is an example `.eslintrc.js`:
 
 ```js
+require("@rushstack/eslint-patch/modern-module-resolution");
+
 module.exports = {
   extends: 'standard-with-typescript',
   parserOptions: {

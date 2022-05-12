@@ -7,7 +7,6 @@ import { NormalizedPackageJson } from 'read-pkg-up'
 import { Linter } from 'eslint'
 import { readFile } from 'fs/promises'
 import { resolve } from 'path'
-import npmPkgArg from 'npm-package-arg'
 import semver from 'semver'
 import yaml from 'js-yaml'
 import { Record, Array, String } from 'runtypes'
@@ -22,7 +21,7 @@ interface PkgDetails {
 }
 
 const getPkgDetails = async (): Promise<PkgDetails> => {
-  const readPkgUp: typeof import('read-pkg-up')['readPackageUpAsync'] = (await inclusion('read-pkg-up')).readPackageUpAsync
+  const readPkgUp: typeof import('read-pkg-up')['readPackageUp'] = (await inclusion('read-pkg-up')).readPackageUp
   const readResult = await readPkgUp()
   if (readResult === undefined) { throw new Error() }
   const ourPkg = readResult.packageJson
@@ -183,7 +182,7 @@ test('Dependencies range types', async (t) => {
   const { ourDeps, ourPeerDeps, ourDevDeps } = await getPkgDetails()
   for (const [name, range] of Object.entries(ourDeps)) {
     const specifier = '^'
-    t.true(range.startsWith(specifier), `Regular dependency ${name} starts with \`${specifier}\`.`)
+    t.true(range.startsWith(specifier), `Regular dependency ${name} does not start with \`${specifier}\`!`)
   }
   for (const [name, range] of Object.entries(ourPeerDeps)) {
     if (name === 'typescript') {
@@ -198,14 +197,14 @@ test('Dependencies range types', async (t) => {
   }
 })
 
-test('Own peerDependencies include those of eslint-config-standard', async (t) => {
-  const { ourPeerDeps } = await getPkgDetails()
+test('Own dependencies include those of eslint-config-standard', async (t) => {
+  const { ourDeps, ourPeerDeps } = await getPkgDetails()
   Object
     .entries(standardPkg.peerDependencies)
     .forEach(([_name, standardDep]) => {
       // https://github.com/microsoft/TypeScript/pull/12253
       const name = _name as keyof typeof standardPkg.peerDependencies
-      const ourDep = ourPeerDeps[name]
+      const ourDep = ourDeps[name] ?? ourPeerDeps[name]
       t.is(ourDep, standardDep, name)
     })
 })
@@ -218,9 +217,9 @@ test('@typescript-eslint/eslint-plugin, dev dep subset of peer dep', async (t) =
 })
 
 test('devDep plugin range subset of dep parser range', async (t) => {
-  const { ourDeps, ourDevDeps } = await getPkgDetails()
+  const { ourDeps } = await getPkgDetails()
   const depParserRange = ourDeps['@typescript-eslint/parser']
-  const devPluginRange = ourDevDeps['@typescript-eslint/eslint-plugin']
+  const devPluginRange = ourDeps['@typescript-eslint/eslint-plugin']
   t.true(semver.subset(devPluginRange, depParserRange))
 })
 
@@ -235,41 +234,6 @@ test('Exported rule values do not reference eslint-config-standard ones', (t) =>
 
     t.false(override.rules[`@typescript-eslint/${ruleName}`] === configStandard.rules[ruleName])
   }
-})
-
-test('npm install args in readme satisfy peerDeps', async (t) => {
-  const { pkgJson, pkgPath, ourPeerDeps } = await getPkgDetails()
-  const readme = await (await readFile(resolve(pkgPath, '..', 'readme.md'))).toString()
-  const match = readme.match(/```\n(npm install .*?)```/s)
-  if (match === null) throw new Error()
-  if (match.length === 0) throw new Error('failed to find code block')
-  if (match.length > 2) throw new Error('matched multiple code blocks')
-  const installArgRanges = Object.fromEntries(
-    match[1]
-      .replace(/\\/g, '')
-      .trim()
-      .split('\n')
-      .slice(1)
-      .map(arg => {
-        const { name, fetchSpec: range } = npmPkgArg(arg.trim())
-        if (name === null) throw new Error()
-        if (range === null) throw new Error()
-        return [name, range] as const
-      })
-      .filter(([name]) => name !== pkgJson.name)
-  )
-  Object.entries(ourPeerDeps).forEach(([name, peerDepRange]) => {
-    t.true(Object.prototype.hasOwnProperty.call(installArgRanges, name), `missing peerDep ${name} in install args`)
-    const installArgRange = installArgRanges[name]
-    t.true(
-      semver.subset(installArgRange, peerDepRange),
-      `${name} install arg range ${installArgRange} is not a subset of peerDep range ${peerDepRange}`
-    )
-  })
-  const installArgsLength = Object.keys(installArgRanges).length
-  const ourPeerDepsLength = Object.keys(ourPeerDeps).length
-  t.false(installArgsLength > ourPeerDepsLength, 'more install args than peer deps')
-  t.false(ourPeerDepsLength > installArgsLength, 'more peer deps than install args')
 })
 
 test('not using `fs.promises` polyfill when no support for Node.js 12', async (t) => {
