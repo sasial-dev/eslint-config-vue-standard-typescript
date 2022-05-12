@@ -1,15 +1,15 @@
 {
-  "name": "eslint-config-standard-with-typescript",
-  "version": "21.0.1",
-  "description": "An ESLint Shareable Config for JavaScript Standard Style with TypeScript support",
-  "main": "lib/index.js",
+  "name": "eslint-config-vue-standard-typescript",
+  "version": "1.0.0",
+  "description": "An ESLint Shareable Config for JavaScript Standard Style with TypeScript and Vue support",
+  "main": "dist/index.js",
   "scripts": {
     "compile": "tsc",
     "lint": "eslint --ext .js,.ts .",
     "editorconfig": "editorconfig-checker",
     "unit": "ava",
     "test": "run-s clean-artifacts compile lint unit",
-    "clean-artifacts": "git clean lib -X --force",
+    "clean-artifacts": "git clean dist -X --force",
     "is-code-clean": "git diff-index HEAD --quiet",
     "prepare-release": "run-s is-code-clean bump-and-commit",
     "bump-and-commit": "standard-version --skip.tag",
@@ -91,9 +91,9 @@
     "typescript": "4.6.4"
   },
   "files": [
-    "lib/index.js",
-    "lib/index.d.ts",
-    "lib/eslint-config-standard.js",
-    "lib/eslint-config-standard.d.ts"
+    "dist/index.js",
+    "dist/index.d.ts",
+    "dist/eslint-config-standard.js",
+    "dist/eslint-config-standard.d.ts"
   ]
 }
